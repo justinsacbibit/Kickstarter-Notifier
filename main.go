@@ -59,13 +59,13 @@ func main() {
 
     go doEvery(60*time.Second, func() {
         r := Scrape(rgx)
-        fmt.Println("%d remaining", r)
+        fmt.Println(r, "remaining")
         var factor uint64 = 10
         for ; r > factor; factor *= 10 {
         }
         diff := factor / 10
         lastTier := (last - last % diff) / diff
-        curTier := (r - r % diff) % diff
+        curTier := (r - r % diff) / diff
         changed := lastTier != curTier
         if !initial && !changed {
             return
