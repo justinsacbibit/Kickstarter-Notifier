@@ -50,8 +50,8 @@ func Scrape(proj string, idx uint) int64 {
 
 func doEvery(d time.Duration, f func()) {
     for {
-        time.Sleep(d)
         f()
+        time.Sleep(d)
     }
 }
 
