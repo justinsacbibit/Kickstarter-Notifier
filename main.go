@@ -59,6 +59,7 @@ func main() {
 
     go doEvery(60*time.Second, func() {
         r := Scrape(rgx)
+        fmt.Println("%d remaining", r)
         var factor uint64 = 10
         for ; r > factor; factor *= 10 {
         }
