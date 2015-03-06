@@ -2,7 +2,6 @@ package main
 
 import (
     "fmt"
-    "log"
     "net/http"
     "os"
     "regexp"
@@ -19,8 +18,8 @@ var rgx *regexp.Regexp
 func Scrape(proj string, idx uint) int64 {
     doc, err := goquery.NewDocument("https://www.kickstarter.com/projects/" + proj)
     if err != nil {
-        log.Print("Error getting doc")
-        log.Print(err)
+        fmt.Println("Error getting doc")
+        fmt.Println(err)
         return -1
     }
 
@@ -35,8 +34,8 @@ func Scrape(proj string, idx uint) int64 {
         raw := rgx.FindString(span)                                        // (5093  (trailing space)
         remaining, err = strconv.ParseInt(strings.Trim(raw, "( "), 10, 32) // 5093
         if err != nil {
-            log.Print("Error parsing int")
-            log.Print(err)
+            fmt.Println("Error parsing int")
+            fmt.Println(err)
             parseErr = true
         }
         return false
@@ -94,10 +93,10 @@ func main() {
             return
         }
         fmt.Println(remaining, "remaining")
-        send := sendMessage(last, remaining)
-        if !send {
+        if !sendMessage(last, remaining) {
             return
         }
+
         last = remaining
         message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, 20000)
         fmt.Printf("Sending message: %s\n", message)
