@@ -7,7 +7,6 @@ import (
     "regexp"
     "strconv"
     "strings"
-    "time"
 
     "github.com/PuerkitoBio/goquery"
     "github.com/sfreiberg/gotwilio"
@@ -48,18 +47,6 @@ func Scrape(proj string, idx uint) int64 {
     return remaining
 }
 
-func doEvery(d time.Duration, f func()) {
-    for {
-        f()
-        time.Sleep(d)
-    }
-}
-
-func handler(w http.ResponseWriter, req *http.Request) {
-    w.Header().Set("Content-Type", "text/html")
-    w.Write([]byte("<h1>Pebble availability</h1>"))
-}
-
 // Given the last sent amount and the current remaining amount, determines if a new text should be sent
 func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     lastSentAmount-- // Adjust values since we want to send a new text at the diff multiple
@@ -76,36 +63,52 @@ func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     return isInitial || changed
 }
 
+func handler(w http.ResponseWriter, req *http.Request) {
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte("<h1>Pebble availability</h1>"))
+}
+
+var accountSid, authToken, from, to string
+var twilio *gotwilio.Twilio
+var last int64
+
+func scrapeAndText() {
+    var timeSteelIdx uint = 3
+    fmt.Println("Starting scrape")
+    remaining := Scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
+    if remaining < 0 {
+        fmt.Println("Failed scrape")
+        return
+    }
+    fmt.Println(remaining, "remaining")
+    if !sendMessage(last, remaining) {
+        return
+    }
+
+    last = remaining
+    message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, 20000)
+    fmt.Printf("Sending message: %s\n", message)
+    twilio.SendSMS(from, to, message, "", "")
+}
+
+func pingHandler(w http.ResponseWriter, req *http.Request) {
+    scrapeAndText()
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte("scraped"))
+}
+
 func main() {
-    accountSid := os.Getenv("twilioSid")
-    authToken := os.Getenv("twilioToken")
-    twilio := gotwilio.NewTwilioClient(accountSid, authToken)
-    from := os.Getenv("fromNum")
-    to := os.Getenv("toNum")
+    accountSid = os.Getenv("twilioSid")
+    authToken = os.Getenv("twilioToken")
+    twilio = gotwilio.NewTwilioClient(accountSid, authToken)
+    from = os.Getenv("fromNum")
+    to = os.Getenv("toNum")
 
     rgx = regexp.MustCompile("\\((.*?) ")
-    var last int64 = -1
-
-    go doEvery(10*60*time.Second, func() {
-        var timeSteelIdx uint = 3
-        fmt.Println("Starting scrape")
-        remaining := Scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
-        if remaining < 0 {
-            fmt.Println("Failed scrape")
-            return
-        }
-        fmt.Println(remaining, "remaining")
-        if !sendMessage(last, remaining) {
-            return
-        }
-
-        last = remaining
-        message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, 20000)
-        fmt.Printf("Sending message: %s\n", message)
-        twilio.SendSMS(from, to, message, "", "")
-    })
+    last = -1
 
     http.HandleFunc("/", handler)
+    http.HandleFunc("/ping", pingHandler)
     err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
     if err != nil {
         panic(err)
