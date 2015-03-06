@@ -1,0 +1,24 @@
+{
+	"ImportPath": "pebble-availability",
+	"GoVersion": "go1.3.1",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/cascadia",
+			"Comment": "null-31",
+			"Rev": "5d796540e3cb93ea0556c897e6a3c7690f614d35"
+		},
+		{
+			"ImportPath": "github.com/PuerkitoBio/goquery",
+			"Comment": "v0.3.2-69-g4cf64c5",
+			"Rev": "4cf64c51f7e80d56d9ae2ffe7d684d3dd5dbd5d0"
+		},
+		{
+			"ImportPath": "github.com/sfreiberg/gotwilio",
+			"Rev": "708dd6b3c9c606d8b0bd94dbeea9859e842e0332"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "6dc0abcce25682504770fa9a7a6705bbfdebfa48"
+		}
+	]
+}
