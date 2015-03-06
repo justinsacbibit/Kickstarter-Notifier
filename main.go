@@ -50,8 +50,8 @@ func Scrape(proj string, idx uint) int64 {
 
 func doEvery(d time.Duration, f func()) {
     for {
-        f()
         time.Sleep(d)
+        f()
     }
 }
 
@@ -86,7 +86,7 @@ func main() {
     rgx = regexp.MustCompile("\\((.*?) ")
     var last int64 = -1
 
-    go doEvery(60*60*time.Second, func() {
+    go doEvery(10*60*time.Second, func() {
         var timeSteelIdx uint = 3
         fmt.Println("Starting scrape")
         remaining := Scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
