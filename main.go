@@ -63,14 +63,14 @@ func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     return isInitial || changed
 }
 
-func handler(w http.ResponseWriter, req *http.Request) {
-    w.Header().Set("Content-Type", "text/html")
-    w.Write([]byte("<h1>Pebble availability</h1>"))
-}
-
 var accountSid, authToken, from, to string
 var twilio *gotwilio.Twilio
 var last int64
+
+func handler(w http.ResponseWriter, req *http.Request) {
+    w.Header().Set("Content-Type", "text/html")
+    w.Write([]byte(fmt.Sprintf("<h1>Pebble availability</h1>\n<p>%d Pebble Time Steels of %d are remaining.</p>", last, 20000)))
+}
 
 func scrapeAndText() {
     var timeSteelIdx uint = 3
