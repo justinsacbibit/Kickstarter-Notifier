@@ -3,47 +3,78 @@ package main
 import (
     "fmt"
     "log"
-    "regexp"
-    "strings"
-    "strconv"
-    "os"
-    "time"
     "net/http"
+    "os"
+    "regexp"
+    "strconv"
+    "strings"
+    "time"
 
     "github.com/PuerkitoBio/goquery"
     "github.com/sfreiberg/gotwilio"
 )
 
-func Scrape(rgx *regexp.Regexp) uint64 {
-    doc, err := goquery.NewDocument("https://www.kickstarter.com/projects/597507018/pebble-time-awesome-smartwatch-no-compromises")
+var rgx *regexp.Regexp
+
+func Scrape(proj string, idx uint) int64 {
+    doc, err := goquery.NewDocument("https://www.kickstarter.com/projects/" + proj)
     if err != nil {
-        log.Fatal(err)
+        log.Print("Error getting doc")
+        log.Print(err)
+        return -1
     }
 
-    var remaining uint64
-    doc.Find(".limited-number").Each(func(i int, s *goquery.Selection) {
-        timeSteel := 3
-        if i != timeSteel {
-            return
+    var remaining int64 = -1
+    parseErr := false
+    doc.Find(".backers-wrap .h6 .bold").EachWithBreak(func(i int, s *goquery.Selection) bool {
+        if uint(i) != idx*2 {
+            return true
         }
-        span := s.Text()
-        raw := rgx.FindString(span)
-        remaining, _ = strconv.ParseUint(strings.Trim(raw, "( "), 10, 32)
+
+        span := s.Find(".limited-number").Text()                           // Limited (5093 left of 26000)
+        raw := rgx.FindString(span)                                        // (5093  (trailing space)
+        remaining, err = strconv.ParseInt(strings.Trim(raw, "( "), 10, 32) // 5093
+        if err != nil {
+            log.Print("Error parsing int")
+            log.Print(err)
+            parseErr = true
+        }
+        return false
     })
+
+    if parseErr {
+        return -1
+    }
 
     return remaining
 }
 
 func doEvery(d time.Duration, f func()) {
     for {
-        time.Sleep(d)
         f()
+        time.Sleep(d)
     }
 }
 
 func handler(w http.ResponseWriter, req *http.Request) {
     w.Header().Set("Content-Type", "text/html")
     w.Write([]byte("<h1>Pebble availability</h1>"))
+}
+
+// Given the last sent amount and the current remaining amount, determines if a new text should be sent
+func sendMessage(lastSentAmount int64, currentAmount int64) bool {
+    lastSentAmount-- // Adjust values since we want to send a new text at the diff multiple
+    currentAmount--
+    var factor int64 = 10 // Represents the multiple of 10 that is higher than the current amount
+    for factor < currentAmount {
+        factor *= 10
+    }
+    diff := factor / 10 // Threshold for sending a new text
+    lastTier := (lastSentAmount - lastSentAmount%diff) / diff
+    curTier := (currentAmount - currentAmount%diff) / diff
+    isInitial := lastSentAmount < 0
+    changed := curTier < lastTier
+    return isInitial || changed
 }
 
 func main() {
@@ -53,33 +84,28 @@ func main() {
     from := os.Getenv("fromNum")
     to := os.Getenv("toNum")
 
-    rgx := regexp.MustCompile("\\((.*?) ")
-    var last uint64
-    initial := true
+    rgx = regexp.MustCompile("\\((.*?) ")
+    var last int64 = -1
 
-    go doEvery(60*time.Second, func() {
-        r := Scrape(rgx)
-        fmt.Println(r, "remaining")
-        var factor uint64 = 10
-        for ; r > factor; factor *= 10 {
-        }
-        diff := factor / 10
-        lastTier := (last - last % diff) / diff
-        curAdjusted := r - 1
-        curTier := (curAdjusted - curAdjusted % diff) / diff
-        changed := curTier < lastTier
-        if !initial && !changed {
+    go doEvery(60*60*time.Second, func() {
+        var timeSteelIdx uint = 3
+        remaining := Scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
+        if remaining < 0 {
             return
         }
-        initial = false
-        last = curAdjusted
-        message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", r, 20000)
+        fmt.Println(remaining, "remaining")
+        send := sendMessage(last, remaining)
+        if !send {
+            return
+        }
+        last = remaining
+        message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, 20000)
         fmt.Printf("Sending message: %s\n", message)
         twilio.SendSMS(from, to, message, "", "")
     })
 
     http.HandleFunc("/", handler)
-    err := http.ListenAndServe(":" + os.Getenv("PORT"), nil)
+    err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
     if err != nil {
         panic(err)
     }
