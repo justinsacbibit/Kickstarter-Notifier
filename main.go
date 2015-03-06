@@ -65,13 +65,14 @@ func main() {
         }
         diff := factor / 10
         lastTier := (last - last % diff) / diff
-        curTier := (r - r % diff) / diff
-        changed := lastTier != curTier
+        curAdjusted := r - 1
+        curTier := (curAdjusted - curAdjusted % diff) / diff
+        changed := curTier < lastTier
         if !initial && !changed {
             return
         }
         initial = false
-        last = r
+        last = curAdjusted
         message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", r, 20000)
         fmt.Printf("Sending message: %s\n", message)
         twilio.SendSMS(from, to, message, "", "")
