@@ -25,7 +25,7 @@ func Scrape(proj string, idx uint) int64 {
 
     var remaining int64 = -1
     parseErr := false
-    doc.Find(".backers-wrap .h6 .bold").EachWithBreak(func(i int, s *goquery.Selection) bool {
+    doc.Find(".backers-wrap").EachWithBreak(func(i int, s *goquery.Selection) bool {
         if uint(i) != idx*2 {
             return true
         }
@@ -88,8 +88,10 @@ func main() {
 
     go doEvery(60*60*time.Second, func() {
         var timeSteelIdx uint = 3
+        fmt.Println("Starting scrape")
         remaining := Scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
         if remaining < 0 {
+            fmt.Println("Failed scrape")
             return
         }
         fmt.Println(remaining, "remaining")
