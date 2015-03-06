@@ -54,9 +54,23 @@ func main() {
     to := os.Getenv("toNum")
 
     rgx := regexp.MustCompile("\\((.*?) ")
+    var last uint64
+    initial := true
 
     go doEvery(60*time.Second, func() {
         r := Scrape(rgx)
+        var factor uint64 = 10
+        for ; r > factor; factor *= 10 {
+        }
+        diff := factor / 10
+        lastTier := (last - last % diff) / diff
+        curTier := (r - r % diff) % diff
+        changed := lastTier != curTier
+        if !initial && !changed {
+            return
+        }
+        initial = false
+        last = r
         message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", r, 20000)
         fmt.Printf("Sending message: %s\n", message)
         twilio.SendSMS(from, to, message, "", "")
