@@ -27,3 +27,9 @@ func TestSendMessage4(t *testing.T) {
         t.Fail()
     }
 }
+
+func TestSendMessage5(t *testing.T) {
+    if send := sendMessage(0, 1); !send {
+        t.Fail()
+    }
+}

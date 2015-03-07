@@ -73,7 +73,7 @@ func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     lastTier := (lastSentAmount - lastSentAmount%diff) / diff
     curTier := (currentAmount - currentAmount%diff) / diff
     isInitial := lastSentAmount < 0
-    changed := curTier < lastTier
+    changed := curTier < lastTier || (currentAmount != lastSentAmount && lastSentAmount == 0)
     return isInitial || changed
 }
 
