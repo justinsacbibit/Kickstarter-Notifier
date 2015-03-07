@@ -33,3 +33,9 @@ func TestSendMessage5(t *testing.T) {
         t.Fail()
     }
 }
+
+func TestSendMessage6(t *testing.T) {
+    if send := sendMessage(0, 0); send {
+        t.Fail()
+    }
+}

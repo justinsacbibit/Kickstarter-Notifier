@@ -63,6 +63,11 @@ func Scrape(proj string, idx uint) int64 {
 
 // Given the last sent amount and the current remaining amount, determines if a new text should be sent
 func sendMessage(lastSentAmount int64, currentAmount int64) bool {
+    if lastSentAmount < 0 {
+        // initial
+        return true
+    }
+
     lastSentAmount-- // Adjust values since we want to send a new text at the diff multiple
     currentAmount--
     var factor int64 = 10 // Represents the multiple of 10 that is higher than the current amount
@@ -72,9 +77,8 @@ func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     diff := factor / 10 // Threshold for sending a new text
     lastTier := (lastSentAmount - lastSentAmount%diff) / diff
     curTier := (currentAmount - currentAmount%diff) / diff
-    isInitial := lastSentAmount < 0
-    changed := curTier < lastTier || (currentAmount != lastSentAmount && lastSentAmount == 0)
-    return isInitial || changed
+    changed := curTier < lastTier || (currentAmount != lastSentAmount && lastSentAmount < 0)
+    return changed
 }
 
 var accountSid, authToken, from, to string
