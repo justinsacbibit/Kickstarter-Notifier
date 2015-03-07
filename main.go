@@ -24,13 +24,27 @@ func Scrape(proj string, idx uint) int64 {
 
     var remaining int64 = -1
     parseErr := false
-    doc.Find(".backers-wrap").EachWithBreak(func(i int, s *goquery.Selection) bool {
-        if uint(i) != idx*2 {
+    doc.Find(".NS-projects-reward").EachWithBreak(func(i int, s *goquery.Selection) bool {
+        if uint(i) != idx {
             return true
         }
 
-        span := s.Find(".limited-number").Text()                           // Limited (5093 left of 26000)
-        raw := rgx.FindString(span)                                        // (5093  (trailing space)
+        span := s.Find(".limited-number").Text() // Limited (5093 left of 26000)
+        raw := rgx.FindString(span)              // (5093  (trailing space)
+
+        if raw == "" {
+            // check if none remaining
+            span = s.Find(".sold-out").Text()
+            if span == "" {
+                fmt.Println("Failed to parse number of remaining")
+                fmt.Println(s.Text())
+                parseErr = true
+            } else {
+                remaining = 0
+            }
+            return false
+        }
+
         remaining, err = strconv.ParseInt(strings.Trim(raw, "( "), 10, 32) // 5093
         if err != nil {
             fmt.Println("Error parsing int")
