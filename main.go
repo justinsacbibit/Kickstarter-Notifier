@@ -9,7 +9,6 @@ import (
     "strings"
 
     "github.com/PuerkitoBio/goquery"
-    _ "github.com/garyburd/redigo/redis"
     "github.com/sfreiberg/gotwilio"
 )
 
@@ -140,8 +139,8 @@ func sendMessage(lastSentAmount int64, currentAmount int64) bool {
     return changed
 }
 
-var accountSid, authToken, from string
-var twilio *gotwilio.Twilio
+var twilioNumber, sendToNumber string
+var twilioClient *gotwilio.Twilio
 var last int64
 
 func handler(w http.ResponseWriter, req *http.Request) {
@@ -150,23 +149,31 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func scrapeAndText() {
-    // var timeSteelIdx uint = 3
-    // fmt.Println("Starting scrape")
-    // remaining, total, err := scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
-    // if remaining < 0 {
-    //     fmt.Println("Failed scrape")
-    //     return
-    // }
-    // fmt.Println(remaining, "remaining")
-    // if !sendMessage(last, remaining) {
-    //     last = remaining
-    //     return
-    // }
+    var timeSteelIdx uint = 3
+    fmt.Println("Starting scrape")
+    remaining, total, err := scrape("597507018/pebble-time-awesome-smartwatch-no-compromises", timeSteelIdx)
 
-    // last = remaining
-    // message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, 20000)
-    // fmt.Printf("Sending message: %s\n", message)
-    // twilio.SendSMS(from, to, message, "", "")
+    if err != nil {
+        fmt.Println("Failed scrape. Error: ", err)
+        return
+    }
+
+    if remaining < 0 {
+        fmt.Println("Failed scrape")
+        return
+    }
+
+    fmt.Println(remaining, "remaining")
+
+    if !sendMessage(last, remaining) {
+        last = remaining
+        return
+    }
+
+    last = remaining
+    message := fmt.Sprintf("%d Pebble Time Steels of %d are remaining.", remaining, total)
+    fmt.Printf("Sending message: %s\n", message)
+    twilioClient.SendSMS(twilioNumber, sendToNumber, message, "", "")
 }
 
 func pingHandler(w http.ResponseWriter, req *http.Request) {
@@ -176,11 +183,11 @@ func pingHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func main() {
-    // twilioSid := os.Getenv("TWILIO_SID")
-    // twilioToken := os.Getenv("TWILIO_TOKEN")
-    // twilioClient := gotwilio.NewTwilioClient(accountSid, authToken)
-    // twilioNumber := os.Getenv("TWILIO_NUMBER")
-    // redisUrl := os.Getenv("REDISCLOUD_URL")
+    twilioSid := os.Getenv("TWILIO_SID")
+    twilioToken := os.Getenv("TWILIO_TOKEN")
+    twilioClient = gotwilio.NewTwilioClient(twilioSid, twilioToken)
+    twilioNumber = os.Getenv("TWILIO_NUMBER")
+    sendToNumber = os.Getenv("SEND_TO_NUMBER")
 
     rewardsParser = &RewardsParser{}
 
