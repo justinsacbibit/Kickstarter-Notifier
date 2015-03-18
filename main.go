@@ -107,7 +107,7 @@ func scrape(proj string, idx uint) (int64, int64, error) {
             return true
         }
 
-        span := s.Find(".limited-number").Text()
+        span := s.Find(".backers-wrap").Text()
         remaining, total, err = rewardsParser.parseRewardAmounts(span)
         return false
     })
